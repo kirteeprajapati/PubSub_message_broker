@@ -9,13 +9,9 @@ import (
 // MESSAGE TYPES - WebSocket Protocol ke saare message formats
 // ============================================================================
 //
-// HINGLISH EXPLANATION (Interview ke liye):
 // =========================================
-// Models package = Data structures jo network pe travel karte hain
 // JSON serialize/deserialize hote hain yeh
 //
-// Interview: "How do you design message formats?"
-// Answer: 1. Type field for message routing
 //         2. Request ID for correlation (request-response matching)
 //         3. Optional fields with omitempty
 //         4. Consistent error format
@@ -24,29 +20,16 @@ import (
 // Server → Client: ack, event, error, pong, info
 //
 // Har message mein optional request_id hota hai for correlation
-// Interview: "What is request-response correlation?"
-// Answer: Client sends request_id with request
 //         Server echoes it in response
 //         Client matches response to original request
 //
 
-// HINGLISH: MessageType - custom string type for type safety
-// Interview: "Why custom type instead of string?"
-// Answer: 1. Type safety - galti se wrong string nahi use kar sakte
-//         2. Code readability - intent clear hai
-//         3. Easy refactoring - ek jagah change, sab jagah effect
+// 3. Easy refactoring - ek jagah change, sab jagah effect
 type MessageType string
 
 const (
-	// HINGLISH: Client → Server message types
-	// Yeh client bhejta hai, server receive karta hai
-	TypeSubscribe   MessageType = "subscribe"   // Topic subscribe karo
-	TypeUnsubscribe MessageType = "unsubscribe" // Topic se unsubscribe karo
-	TypePublish     MessageType = "publish"     // Message publish karo
-	TypePing        MessageType = "ping"        // Heartbeat - "main zinda hoon"
+	TypePing MessageType = "ping" // Heartbeat - "main zinda hoon"
 
-	// HINGLISH: Server → Client message types
-	// Yeh server bhejta hai, client receive karta hai
 	TypeAck   MessageType = "ack"   // Acknowledgment - "haan mil gaya"
 	TypeEvent MessageType = "event" // Published message delivery
 	TypeError MessageType = "error" // Error response
@@ -58,30 +41,22 @@ const (
 type ErrorCode string
 
 const (
-	ErrBadRequest     ErrorCode = "BAD_REQUEST"
-	ErrTopicNotFound  ErrorCode = "TOPIC_NOT_FOUND"
-	ErrSlowConsumer   ErrorCode = "SLOW_CONSUMER"
-	ErrUnauthorized   ErrorCode = "UNAUTHORIZED"
-	ErrInternal       ErrorCode = "INTERNAL"
-	ErrAlreadyExists  ErrorCode = "ALREADY_EXISTS"
-	ErrNotSubscribed  ErrorCode = "NOT_SUBSCRIBED"
+	ErrBadRequest    ErrorCode = "BAD_REQUEST"
+	ErrTopicNotFound ErrorCode = "TOPIC_NOT_FOUND"
+	ErrSlowConsumer  ErrorCode = "SLOW_CONSUMER"
+	ErrUnauthorized  ErrorCode = "UNAUTHORIZED"
+	ErrInternal      ErrorCode = "INTERNAL"
+	ErrAlreadyExists ErrorCode = "ALREADY_EXISTS"
+	ErrNotSubscribed ErrorCode = "NOT_SUBSCRIBED"
 )
 
 // ============================================================================
 // CLIENT → SERVER MESSAGES
 // ============================================================================
-// HINGLISH: Yeh structs client se aate hain
 
-// HINGLISH: ClientMessage - ek generic struct for all client messages
-// Interview: "Why one struct for all message types?"
-// Answer: 1. JSON parsing simple - ek struct mein parse karo
-//         2. Type field se decide karo kaunsa handler call karna hai
-//         3. Optional fields with omitempty - jo nahi bheja woh null/0
+//  3. Optional fields with omitempty - jo nahi bheja woh null/0
 //
-// JSON Tags samjho:
-//   `json:"type"` = JSON mein "type" key se map hoga
-//   `omitempty` = agar empty/zero value hai toh JSON mein include mat karo
-//
+// `json:"type"` = JSON mein "type" key se map hoga
 type ClientMessage struct {
 	Type      MessageType     `json:"type"`                 // Required: message type
 	Topic     string          `json:"topic,omitempty"`      // Topic name (subscribe/publish)
@@ -91,11 +66,8 @@ type ClientMessage struct {
 	RequestID string          `json:"request_id,omitempty"` // Correlation ID (optional but recommended!)
 }
 
-// HINGLISH: PublishPayload - message content jo publish karna hai
-// Interview: "What is json.RawMessage?"
-// Answer: JSON as raw bytes - parse nahi karte, as-is store karte hain
-//         Useful jab message content ka structure unknown ho
-//         Humein content ka structure pata nahi - kuch bhi ho sakta hai!
+// Useful jab message content ka structure unknown ho
+// Humein content ka structure pata nahi - kuch bhi ho sakta hai!
 type PublishPayload struct {
 	ID      string          `json:"id"`      // UUID - unique message identifier
 	Payload json.RawMessage `json:"payload"` // Any valid JSON - we don't care what's inside
@@ -104,9 +76,7 @@ type PublishPayload struct {
 // ============================================================================
 // SERVER → CLIENT MESSAGES
 // ============================================================================
-// HINGLISH: Yeh structs server bhejta hai
 
-// HINGLISH: ServerMessage - server se client ko jaane wale messages
 // Same approach - ek struct, multiple message types
 type ServerMessage struct {
 	Type      MessageType   `json:"type"`                 // Message type (ack/event/error/pong/info)
@@ -117,7 +87,6 @@ type ServerMessage struct {
 	Error     *ErrorPayload `json:"error,omitempty"`      // Error details (for error type)
 	Msg       string        `json:"msg,omitempty"`        // Info message (for info type)
 	Timestamp string        `json:"ts,omitempty"`         // ISO 8601 timestamp (2024-01-15T10:30:00Z)
-	// HINGLISH: Timestamp kyun?
 	//   1. Debugging - kab message generate hua
 	//   2. Ordering - agar messages out of order aaye
 	//   3. Audit trail - logging/compliance
@@ -182,19 +151,13 @@ type StatsResponse struct {
 // ============================================================================
 // HELPER FUNCTIONS - Factory functions for creating messages
 // ============================================================================
-// HINGLISH: Factory functions - message objects create karna easy
-// Interview: "What is factory pattern?"
-// Answer: Functions/methods that create objects
 //         Hide construction complexity, ensure consistency
 
-// HINGLISH: NewTimestamp - current time ISO 8601 format mein
 // ISO 8601 = international standard (2024-01-15T10:30:00Z)
-// UTC use karte hain timezone confusion avoid karne ke liye
 func NewTimestamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
 
-// HINGLISH: NewAckMessage - acknowledgment message banao
 // ACK = "haan bhai, tera message mila, kaam ho gaya"
 func NewAckMessage(requestID, topic string) *ServerMessage {
 	return &ServerMessage{
@@ -206,8 +169,6 @@ func NewAckMessage(requestID, topic string) *ServerMessage {
 	}
 }
 
-// HINGLISH: NewEventMessage - event message banao (published message delivery)
-// Yeh subscribers ko jaata hai jab koi publish karta hai
 func NewEventMessage(topic string, payload *EventPayload) *ServerMessage {
 	return &ServerMessage{
 		Type:      TypeEvent,
@@ -217,7 +178,6 @@ func NewEventMessage(topic string, payload *EventPayload) *ServerMessage {
 	}
 }
 
-// HINGLISH: NewErrorMessage - error message banao
 // Jab kuch galat ho - topic not found, bad request, etc.
 func NewErrorMessage(requestID string, code ErrorCode, message string) *ServerMessage {
 	return &ServerMessage{
@@ -231,7 +191,6 @@ func NewErrorMessage(requestID string, code ErrorCode, message string) *ServerMe
 	}
 }
 
-// HINGLISH: NewPongMessage - pong response banao
 // Ping ka response - heartbeat acknowledgment
 func NewPongMessage(requestID string) *ServerMessage {
 	return &ServerMessage{
@@ -241,7 +200,6 @@ func NewPongMessage(requestID string) *ServerMessage {
 	}
 }
 
-// HINGLISH: NewInfoMessage - informational message banao
 // Server se client ko info bhejni ho (topic deleted, server shutdown)
 func NewInfoMessage(topic, msg string) *ServerMessage {
 	return &ServerMessage{
