@@ -64,11 +64,11 @@ func NewBroker() *Broker {
 // ============================================================================
 
 func (b *Broker) CreateTopic(name string) error {
-	if b.IsShutdown() {				//always check if server is shutting down 
+	if b.IsShutdown() { //always check if server is shutting down
 		return ErrShuttingDown
 	}
 	//LoadOrStore if exist :return , not-exist : create
-	
+
 	_, loaded := b.topics.LoadOrStore(name, NewTopic(name))
 	if loaded {
 		return ErrTopicExists // Already exists error NOT IDEMPOTENT
@@ -76,8 +76,8 @@ func (b *Broker) CreateTopic(name string) error {
 	return nil // created
 }
 
-func (b *Broker) DeleteTopic(name string) error {	// delete and let the subscriber know
-	value, ok := b.topics.LoadAndDelete(name)	// in 1 step atomic 
+func (b *Broker) DeleteTopic(name string) error { // delete and let the subscriber know
+	value, ok := b.topics.LoadAndDelete(name) // in 1 step atomic
 	// so that no one can access in between load-and-delete
 	if !ok {
 		return ErrTopicNotFound // Topic exist nahi karta
@@ -127,7 +127,7 @@ func (b *Broker) TopicCount() int {
 // Connection lifecycle management
 //                    Key = connection pointer, Value = Subscriber object
 
-//  RegisterConnection - track new WebSocket connection
+// RegisterConnection - track new WebSocket connection
 func (b *Broker) RegisterConnection(conn *websocket.Conn, clientID string) *Subscriber {
 	sub := NewSubscriber(clientID, conn)
 	// Key = WebSocket connection pointer (memory address)
@@ -184,7 +184,7 @@ func (b *Broker) Subscribe(conn *websocket.Conn, clientID, topicName string, las
 
 	topic.AddSubscriber(sub)
 	var replay []*models.EventPayload
-	if lastN > 0 {	// get the last N message form the ringbuffer
+	if lastN > 0 { // get the last N message form the ringbuffer
 		replay = topic.GetLastN(lastN)
 	}
 
@@ -267,7 +267,6 @@ func (b *Broker) Shutdown() {
 }
 
 func (b *Broker) IsShutdown() bool {
-	b.shutdownMu.RLock()         // Read lock acquire karo
 	defer b.shutdownMu.RUnlock() // Function end pe release karo (defer = guarantee)
 	return b.shutdown
 }
@@ -276,6 +275,7 @@ func (b *Broker) IsShutdown() bool {
 // ERROR TYPES
 // ============================================================================
 type BrokerError string
+
 func (e BrokerError) Error() string { return string(e) }
 
 const (
