@@ -55,7 +55,6 @@ const (
 // ============================================================================
 
 //  3. Optional fields with omitempty - jo nahi bheja woh null/0
-//
 // `json:"type"` = JSON mein "type" key se map hoga
 type ClientMessage struct {
 	Type      MessageType     `json:"type"`                 // Required: message type
